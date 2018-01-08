@@ -1,0 +1,12 @@
+/target/
+/.settings/
+/.externalToolBuilders/
+/.classpath
+/bin/
+.project
+*.iml
+.idea
+*.DS_Store
+/out/
+/src/test/
+
