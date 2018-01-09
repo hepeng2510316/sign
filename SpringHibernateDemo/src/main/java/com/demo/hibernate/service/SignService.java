@@ -1,6 +1,8 @@
 package com.demo.hibernate.service;
 
 import com.demo.hibernate.beans.SignRecordResult;
+import com.demo.hibernate.entities.Comment;
+import com.demo.hibernate.entities.Like;
 import com.demo.hibernate.entities.SignRecord;
 
 import java.util.List;
@@ -11,8 +13,8 @@ public interface SignService {
 
     List<SignRecordResult> getSignRecordList(String openId);
 
-    void addLike(String openId, Integer recordId);
+    void addLike(Like like);
 
-    void addComment(String openId, String info, Integer recordId);
+    void addComment(Comment comment);
 
 }

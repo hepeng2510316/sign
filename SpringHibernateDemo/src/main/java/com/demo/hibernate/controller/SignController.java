@@ -1,6 +1,8 @@
 package com.demo.hibernate.controller;
 
 import com.demo.hibernate.beans.SignRecordResult;
+import com.demo.hibernate.entities.Comment;
+import com.demo.hibernate.entities.Like;
 import com.demo.hibernate.entities.SignRecord;
 import com.demo.hibernate.entities.Tips;
 import com.demo.hibernate.exceptions.LikeException;
@@ -54,7 +56,7 @@ public class SignController {
             List<SignRecordResult> signRecordList = signService.getSignRecordList(openId);
             jsonObject.addProperty("code", 1000);
             jsonObject.addProperty("msg", "成功");
-            jsonObject.addProperty("data", new Gson().toJson(signRecordList));
+            jsonObject.add("data", new Gson().toJsonTree(signRecordList));
         } catch (Exception e) {
             e.printStackTrace();
             jsonObject.addProperty("code", 1001);
@@ -64,10 +66,10 @@ public class SignController {
     }
 
     @RequestMapping(value = "/addLike", method = RequestMethod.POST)
-    public JsonObject addLike(String openId, int recordId) {
+    public JsonObject addLike(@RequestBody Like like) {
         JsonObject jsonObject = new JsonObject();
         try {
-            signService.addLike(openId, recordId);
+            signService.addLike(like);
             jsonObject.addProperty("code", 1000);
             jsonObject.addProperty("msg", "成功");
         } catch (LikeException e) {
@@ -82,10 +84,10 @@ public class SignController {
     }
 
     @RequestMapping(value = "/addComment", method = RequestMethod.POST)
-    public JsonObject addComment(String openId, String info, int recordId) {
+    public JsonObject addComment(@RequestBody Comment comment) {
         JsonObject jsonObject = new JsonObject();
         try {
-            signService.addComment(openId, info, recordId);
+            signService.addComment(comment);
             jsonObject.addProperty("code", 1000);
             jsonObject.addProperty("msg", "成功");
         } catch (Exception e) {

@@ -1,27 +1,26 @@
 package com.demo.hibernate.service.impl;
 
-import com.demo.hibernate.dao.TipsDao;
 import com.demo.hibernate.entities.Tips;
+import com.demo.hibernate.repository.TipsRepository;
 import com.demo.hibernate.service.TipsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 @Service
 public class TipServiceImpl implements TipsService {
 
-    private final TipsDao tipsDao;
-
-    @Autowired
-    public TipServiceImpl(TipsDao tipsDao) {
-        this.tipsDao = tipsDao;
-    }
+    @Resource
+    private TipsRepository tipsRepository;
 
     @Override
     public Tips getRandomTips() {
-        List list = tipsDao.findAll();
+        List<Tips> list = tipsRepository.findAll();
+        if (list.isEmpty()) {
+            return null;
+        }
         int i = (int) (Math.random() * list.size());
-        return (Tips) list.get(i);
+        return list.get(i);
     }
 }

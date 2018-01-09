@@ -1,37 +1,42 @@
 package com.demo.hibernate.service.impl;
 
 import com.demo.hibernate.beans.SignRecordResult;
-import com.demo.hibernate.dao.AccountDao;
-import com.demo.hibernate.dao.CommentDao;
-import com.demo.hibernate.dao.LikeDao;
-import com.demo.hibernate.dao.SignRecordDao;
 import com.demo.hibernate.entities.Account;
 import com.demo.hibernate.entities.Comment;
 import com.demo.hibernate.entities.Like;
 import com.demo.hibernate.entities.SignRecord;
 import com.demo.hibernate.exceptions.LikeException;
 import com.demo.hibernate.exceptions.SignException;
+import com.demo.hibernate.repository.AccountRepository;
+import com.demo.hibernate.repository.CommentRepository;
+import com.demo.hibernate.repository.LikeRepository;
+import com.demo.hibernate.repository.SignRecordRepository;
 import com.demo.hibernate.service.SignService;
+import com.demo.hibernate.utils.DateUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Service
 public class SignServiceImpl implements SignService {
 
     @Resource
-    private SignRecordDao signRecordDao;
+    private SignRecordRepository signRecordRepository;
 
     @Resource
-    private AccountDao accountDao;
+    private AccountRepository accountRepository;
 
     @Resource
-    private LikeDao likeDao;
+    private LikeRepository likeRepository;
 
     @Resource
-    private CommentDao commentDao;
+    private CommentRepository commentRepository;
 
     public SignServiceImpl() {
 
@@ -41,23 +46,24 @@ public class SignServiceImpl implements SignService {
     @Override
     public void sign(SignRecord signRecord, String openId) {
         //1.是否签到
-        long count = signRecordDao.findTodaySignRecord(openId);
-        if (count > 0) {
+        SignRecord sToday = signRecordRepository.findTodaySignRecord(openId, DateUtils.getToday());
+        if (sToday != null) {
             throw new SignException("用户今日已签到!");
         }
         //2.可以签到
-        signRecordDao.save(signRecord);
+        signRecord.setSignTime(new Date());
+        signRecordRepository.save(signRecord);
         //3.更新用户的连续签到次数和累计签到次数
-        Account account = accountDao.findAccount(openId);
+        Account account = accountRepository.findByOpenId(openId);
         account.setTotalSignCount(account.getTotalSignCount() + 1);
         //4.该用户昨日是否签到
-        long yesterdayCount = signRecordDao.findYesterdaySignRecord(openId);
-        if (yesterdayCount > 0) {
+        SignRecord sYesterday = signRecordRepository.findYesterdaySignRecord(openId, DateUtils.getYesterday(), DateUtils.getToday());
+        if (sYesterday != null) {
             account.setContinueSignCount(account.getContinueSignCount() + 1);
         } else {
             account.setContinueSignCount(1);
         }
-        accountDao.updateAccount(account);
+        accountRepository.save(account);
     }
 
     @Override
@@ -65,16 +71,16 @@ public class SignServiceImpl implements SignService {
 
         List<SignRecordResult> list = new ArrayList<>();
 
-        //1.查所有签到记录
-        List<SignRecord> all = signRecordDao.findAll();
+        //1.查所有签到记录(最大500条)
+        Pageable pageable  = new PageRequest(0, 500);
+        Page<SignRecord> all = signRecordRepository.findAll(pageable);
 
-        for (SignRecord signRecord : all) {
+        for (SignRecord signRecord : all.getContent()) {
             SignRecordResult signRecordResult = new SignRecordResult();
-
             //2.查找用户属性
-            Account account = accountDao.findAccount(signRecord.getOpenId());
+            Account account = accountRepository.findByOpenId(signRecord.getOpenId());
             //3.查找签到记录点赞数，及该记录当前用户是否点赞
-            List<Like> likes = likeDao.findList(signRecord.getId());
+            List<Like> likes = likeRepository.findListByRecordId(signRecord.getId());
             int likeCount = likes.size();
             boolean isMineLike = false;
             for (Like l : likes) {
@@ -85,13 +91,13 @@ public class SignServiceImpl implements SignService {
                 }
             }
             //查找签到记录评论列表
-            List<Comment> comments = commentDao.findList(signRecord.getId());
+            List<Comment> comments = commentRepository.findListByRecordId(signRecord.getId());
 
             List<SignRecordResult.Comment> commentList = new ArrayList<>();
 
             //评论添加用户昵称
             for (Comment comment : comments) {
-                Account commentAccount = accountDao.findAccount(signRecord.getOpenId());
+                Account commentAccount = accountRepository.findByOpenId(signRecord.getOpenId());
                 SignRecordResult.Comment comment1 = new SignRecordResult.Comment();
                 comment1.setCommentInfo(comment.getCommentInfo());
                 comment1.setId(comment.getId());
@@ -120,18 +126,17 @@ public class SignServiceImpl implements SignService {
 
 
     @Override
-    public void addLike(String openId, Integer recordId) {
+    public void addLike(Like like) {
         //1.是否点赞
-        Like like = likeDao.find(openId, recordId);
-        if (like != null) {
+        Like like1 = likeRepository.findByOpenIdAndRecordId(like.getOpenId(), like.getRecordId());
+        if (like1 != null) {
             throw new LikeException("您已经点过赞");
         }
-        likeDao.save(new Like(openId, recordId));
+        likeRepository.save(like);
     }
 
     @Override
-    public void addComment(String openId, String info, Integer recordId) {
-
-        commentDao.save(new Comment(recordId, openId, info));
+    public void addComment(Comment comment) {
+        commentRepository.save(comment);
     }
 }

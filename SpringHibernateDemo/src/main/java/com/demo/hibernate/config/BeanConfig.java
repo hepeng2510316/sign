@@ -98,7 +98,7 @@ public class BeanConfig {
      * @param sessionFactory SessionFactory
      * @return 事务管理器
      */
-    @Bean
+    @Bean("transactionManager")
     @Primary
     @Autowired
     public PlatformTransactionManager getTransactionManager(SessionFactory sessionFactory) {
