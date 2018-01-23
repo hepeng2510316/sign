@@ -6,18 +6,20 @@ import com.demo.hibernate.entities.Like;
 import com.demo.hibernate.entities.SignRecord;
 import com.demo.hibernate.entities.Tips;
 import com.demo.hibernate.exceptions.LikeException;
+import com.demo.hibernate.exceptions.PrivateException;
 import com.demo.hibernate.exceptions.SignException;
 import com.demo.hibernate.service.SignService;
 import com.demo.hibernate.service.TipsService;
+import com.demo.hibernate.utils.ResUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -30,72 +32,39 @@ public class SignController {
         this.signService = signService;
     }
 
-    @RequestMapping(value = "/sign", method = RequestMethod.POST)
-    public JsonObject sign(@RequestBody SignRecord signRecord) {
-        JsonObject jsonObject = new JsonObject();
-        try {
-            signService.sign(signRecord, signRecord.getOpenId());
-            jsonObject.addProperty("code", 1000);
-            jsonObject.addProperty("msg", "签到成功!");
-        } catch (SignException e) {
-            e.printStackTrace();
-            jsonObject.addProperty("code", 1001);
-            jsonObject.addProperty("msg", e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            jsonObject.addProperty("code", 1001);
-            jsonObject.addProperty("msg", "签到失败!");
+    @PostMapping("/sign")
+    public Map sign(@Valid @RequestBody SignRecord signRecord, BindingResult result) throws Exception {
+        if (result.hasErrors()) {
+            throw new PrivateException(result.getAllErrors().get(0).getDefaultMessage());
         }
-        return jsonObject;
+        signService.sign(signRecord, signRecord.getOpenId());
+        return ResUtils.success("签到成功！");
     }
 
-    @RequestMapping(value = "/getSignRecordList", method = RequestMethod.POST)
-    public JsonObject getSignRecordList(String openId) {
-        JsonObject jsonObject = new JsonObject();
-        try {
-            List<SignRecordResult> signRecordList = signService.getSignRecordList(openId);
-            jsonObject.addProperty("code", 1000);
-            jsonObject.addProperty("msg", "成功");
-            jsonObject.add("data", new Gson().toJsonTree(signRecordList));
-        } catch (Exception e) {
-            e.printStackTrace();
-            jsonObject.addProperty("code", 1001);
-            jsonObject.addProperty("msg", "获取签到列表失败!");
-        }
-        return jsonObject;
+    @PostMapping("/getSignRecordList")
+    public Map getSignRecordList(@RequestParam(value = "openId") String openId) {
+        List<SignRecordResult> signRecordList = signService.getSignRecordList(openId);
+        return ResUtils.success(signRecordList);
+
     }
 
-    @RequestMapping(value = "/addLike", method = RequestMethod.POST)
-    public JsonObject addLike(@RequestBody Like like) {
-        JsonObject jsonObject = new JsonObject();
-        try {
-            signService.addLike(like);
-            jsonObject.addProperty("code", 1000);
-            jsonObject.addProperty("msg", "成功");
-        } catch (LikeException e) {
-            jsonObject.addProperty("code", 1001);
-            jsonObject.addProperty("msg", e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            jsonObject.addProperty("code", 1001);
-            jsonObject.addProperty("msg", "点赞失败!");
+    @PostMapping("/addLike")
+    public Map addLike(@Valid @RequestBody Like like, BindingResult result) throws Exception {
+        if (result.hasErrors()) {
+            throw new PrivateException(result.getAllErrors().get(0).getDefaultMessage());
         }
-        return jsonObject;
+        signService.addLike(like);
+        return ResUtils.success();
+
     }
 
-    @RequestMapping(value = "/addComment", method = RequestMethod.POST)
-    public JsonObject addComment(@RequestBody Comment comment) {
-        JsonObject jsonObject = new JsonObject();
-        try {
-            signService.addComment(comment);
-            jsonObject.addProperty("code", 1000);
-            jsonObject.addProperty("msg", "成功");
-        } catch (Exception e) {
-            e.printStackTrace();
-            jsonObject.addProperty("code", 1001);
-            jsonObject.addProperty("msg", "评论失败!");
+    @PostMapping("/addComment")
+    public Map addComment(@Valid @RequestBody Comment comment, BindingResult result) throws Exception {
+        if (result.hasErrors()) {
+            throw new PrivateException(result.getAllErrors().get(0).getDefaultMessage());
         }
-        return jsonObject;
+        signService.addComment(comment);
+        return ResUtils.success();
     }
 
 }

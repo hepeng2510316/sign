@@ -1,13 +1,18 @@
 package com.demo.hibernate.controller;
 
 import com.demo.hibernate.entities.Tips;
+import com.demo.hibernate.exceptions.PrivateException;
 import com.demo.hibernate.service.TipsService;
+import com.demo.hibernate.utils.ResUtils;
 import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -20,22 +25,12 @@ public class TipsController {
         this.tipsService = tipsService;
     }
 
-    @RequestMapping(value = "/getTips", method = RequestMethod.GET)
-    public JsonObject getTips() {
-
+    @GetMapping(value = "/getTips")
+    public Map getTips() throws Exception {
         Tips tips = tipsService.getRandomTips();
         if (tips != null) {
-
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("code", 1000);
-            jsonObject.addProperty("data", tips.getContent());
-
-            return jsonObject;
+            return ResUtils.success(tips);
         }
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("code", 1001);
-
-        return jsonObject;
-
+        throw new PrivateException("获取tips失败");
     }
 }
